@@ -23,7 +23,7 @@ public class OrderServiceApplication {
 		@Autowired
 		private ProductClient productClient;
 
-		@RequestMapping(method = RequestMethod.GET, path = "/api/v1/trace")
+		@RequestMapping(method = RequestMethod.GET, path = "/api/v1/orders/trace")
 		public String trace(){
 			return "order-service: 1.0\n" + productClient.trace();
 		}
@@ -33,7 +33,7 @@ public class OrderServiceApplication {
 	@FeignClient("product-service")
 	public interface ProductClient{
 
-		@RequestMapping(method = RequestMethod.GET, path = "/api/v1/trace")
+		@RequestMapping(method = RequestMethod.GET, path = "/api/v1/products/trace")
 		public String trace();
 
 	}
