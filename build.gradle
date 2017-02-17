@@ -3,6 +3,9 @@ buildscript {
 		springBootVersion = '1.5.1.RELEASE'
 	}
 	repositories {
+		maven {
+			url "http://nexus-cicd.192.168.252.210.xip.io/content/repositories/central/"
+		}
 		mavenCentral()
 	}
 	dependencies {
