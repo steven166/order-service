@@ -6,7 +6,6 @@ buildscript {
 		maven {
 			url "http://nexus-cicd.192.168.252.210.xip.io/content/repositories/central/"
 		}
-		mavenCentral()
 	}
 	dependencies {
 		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
