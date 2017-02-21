@@ -1,61 +1,136 @@
 buildscript {
-	ext {
-		springBootVersion = '1.5.1.RELEASE'
-	}
 	repositories {
+		mavenCentral()
 		maven {
-			url "http://nexus-cicd.192.168.252.210.xip.io/content/repositories/central/"
+			name "Maxxton Private repository"
+			url "http://mxt-maven01.newyse.maxxton/repository/internal"
+		}
+		maven {
+			name "Bintray"
+			url "http://jcenter.bintray.com"
 		}
 	}
 	dependencies {
-		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
-		classpath("com.maxxton:microdocs-crawler-gradle:1.+")
-		classpath("com.netflix.nebula:nebula-release-plugin:4.0.1")
-		classpath("com.netflix.nebula:gradle-dependency-lock-plugin:4.3.0")
-		classpath("com.netflix.nebula:gradle-extra-configurations-plugin:3.1.0")
+		classpath("org.springframework.boot:spring-boot-gradle-plugin:${spring_boot_gradle_plugin_version}")
+		classpath("io.spring.gradle:dependency-management-plugin:${spring_dependency_management_plugin_version}")
+		classpath("se.transmode.gradle:gradle-docker:${gradle_docker_version}")
+		classpath("com.github.ben-manes:gradle-versions-plugin:${gradle_versions_plugin_version}")
+
+		classpath("com.netflix.nebula:nebula-release-plugin:${nebula_release_plugin_version}")
+		classpath("com.netflix.nebula:gradle-dependency-lock-plugin:${gradle_dependency_lock_plugin_version}")
+		classpath("com.netflix.nebula:gradle-extra-configurations-plugin:${gradle_extra_configurations_plugin_version}")
+
+		classpath("com.maxxton:microdocs-crawler-gradle:${microdocs_version}")
+		classpath("com.maxxton:microdocs-core-java:1.0")
+		classpath("com.fasterxml.jackson.core:jackson-databind:2.7.5")
+		classpath("org.codehaus.groovy:groovy-all:2.4.4")
 	}
 }
 
-apply plugin: 'java'
-apply plugin: 'eclipse'
-apply plugin: 'org.springframework.boot'
-apply plugin: 'microdocs'
+apply plugin: "java"
+apply plugin: "application"
+apply plugin: "eclipse"
+apply plugin: "docker"
+apply plugin: "idea"
+apply plugin: "org.springframework.boot"
+apply plugin: "io.spring.dependency-management"
+apply plugin: "microdocs"
+apply plugin: 'com.github.ben-manes.versions'
+
+apply plugin: "groovy"
+apply plugin: "maven"
+apply plugin: "maven-publish"
 apply plugin: "nebula.nebula-release"
 apply plugin: "nebula.dependency-lock"
+apply plugin: "jacoco"
 
 jar {
-	baseName = 'order-service'
-	version = ''
+	baseName = "${application_name}"
+	version = "1.0.0"
+}
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+group = "${application_name}"
+springBoot {
+	mainClass = "${main_class}"
 }
 
-sourceCompatibility = 1.8
-group = 'com.example'
+// sidenote
+// this task only works when you run it from command line after you init boot2docker (osx)
+// $(boot2docker shellinit)
+task buildDocker(type: Docker, dependsOn: [build, jar]) {
+	push = false
+	applicationName = jar.baseName
+	dockerfile = file("src/main/docker/Dockerfile")
+	dockerBinary = file("/usr/local/bin/docker") // move to a gradle.properties
+	doFirst {
+		copy {
+			from jar
+			into stageDir
+		}
+	}
+}
+
+// add tasks to a gradle group
+configure(buildDocker) {
+	group = "distribution"
+	description = "Create a Docker image"
+}
 
 repositories {
 	mavenCentral()
-	maven { url "https://repo.spring.io/snapshot" }
-	maven { url "https://repo.spring.io/milestone" }
-}
+	mavenLocal()
+	maven { url "http://repo.spring.io/milestone" }
+	maven { url "http://repo.spring.io/snapshot" }
+	maven { url "http://repo.spring.io/release" }
+	maven { url "http://repo.maven.apache.org/maven2" }
 
+	maven {
+		name "Maxxton Private repository"
+		url "http://mxt-maven01.newyse.maxxton/repository/internal"
+		credentials {
+			username "microservices"
+			password "M1cr053rv1c35!"
+		}
+	}
+}
 
 dependencies {
-	compile('org.springframework.cloud:spring-cloud-starter-feign')
-	compile('org.springframework.cloud:spring-cloud-starter-ribbon')
-	compile('org.springframework.boot:spring-boot-starter-web')
-	compile('io.fabric8:spring-cloud-starter-kubernetes-all:0.1.4')
-	testCompile('org.springframework.boot:spring-boot-starter-test')
-}
+	compile("org.springframework.boot:spring-boot-starter:${spring_boot_version}")
+	compile("org.springframework.boot:spring-boot-starter-actuator:${spring_boot_version}")
+	compile("org.springframework.boot:spring-boot-starter-logging:${spring_boot_version}")
+	compile("org.springframework.boot:spring-boot-starter-tomcat:${spring_boot_version}")
+	compile("org.springframework.boot:spring-boot-starter-security:${spring_boot_version}")
 
-dependencyManagement {
-	imports {
-		mavenBom "org.springframework.cloud:spring-cloud-dependencies:Dalston.BUILD-SNAPSHOT"
-	}
+	compile("org.springframework.cloud:spring-cloud-starter")
+	compile("org.springframework.cloud:spring-cloud-starter-security")
+	compile("org.springframework.cloud:spring-cloud-starter-eureka")
+	compile("org.springframework.cloud:spring-cloud-starter-config")
+
+	compile("io.reactivex:rxjava:${rxjava_version}")
+	compile("net.logstash.logback:logstash-logback-encoder:${logback_encoder_version}")
+
+	compile("com.maxxton.util:maxxton-utils:${maxxton_util_version}")
+	compile("com.maxxton.multi.concern:maxxton-multi-concern-jpa:${maxxton_multi_concern_version}")
+	compile("com.maxxton.spring.boot.util:spring-boot-utils:${maxxton_spring_boot_util_version}")
+	compile("com.google.maps:google-maps-services:${google_maps_client_version}")
+
+	compile("com.netflix.nebula:nebula-core:${nebula_core_version}")
+	compile("org.ajoberstar:gradle-git:${gradle_git_version}")
+
+	testCompile("org.springframework.boot:spring-boot-starter-test:${spring_boot_version}")
+	testCompile("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jackson_datatype_jsr_version}")
+	testCompile("org.assertj:assertj-core:${assertj_core_version}")
+	testCompile("junit:junit:${junit_version}")
+	testCompile("org.mockito:mockito-core:${mockito_version}")
+	testCompile("org.powermock:powermock-api-mockito:${power_mockito_version}")
+	testCompile("org.powermock:powermock-module-junit4:${power_mockito_version}")
 }
 
 publishing {
 	publications {
 		mavenJava(MavenPublication) {
-			groupId "com.maxxton.microservices"
+			groupId "com.example"
 			artifactId "${application_name}"
 			from components.java
 		}
@@ -73,4 +148,33 @@ publishing {
 			}
 		}
 	}
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.cloud:spring-cloud-dependencies:${spring_cloud_maven_bom}"
+	}
+}
+
+eclipse {
+	classpath {
+		containers.remove("org.eclipse.jdt.launching.JRE_CONTAINER")
+		containers "org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"
+	}
+}
+
+jacoco {
+	toolVersion = "${jacoco_version}"
+}
+
+task wrapper(type: Wrapper) {
+	gradleVersion = "${gradle_version}"
+}
+
+buildMicroDocs {
+	options.addStringOption("group", 'services');
+}
+
+checkMicroDocs {
+	url = "http://microdocs.maxxton.com:3000";
 }
