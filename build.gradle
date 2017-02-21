@@ -10,6 +10,9 @@ buildscript {
 	dependencies {
 		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
 		classpath("com.maxxton:microdocs-crawler-gradle:1.+")
+		classpath("com.netflix.nebula:nebula-release-plugin:4.0.1")
+		classpath("com.netflix.nebula:gradle-dependency-lock-plugin:4.3.0")
+		classpath("com.netflix.nebula:gradle-extra-configurations-plugin:3.1.0")
 	}
 }
 
@@ -17,6 +20,8 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'org.springframework.boot'
 apply plugin: 'microdocs'
+apply plugin: "nebula.nebula-release"
+apply plugin: "nebula.dependency-lock"
 
 jar {
 	baseName = 'order-service'
@@ -24,6 +29,7 @@ jar {
 }
 
 sourceCompatibility = 1.8
+group = 'com.example'
 
 repositories {
 	mavenCentral()
@@ -43,5 +49,28 @@ dependencies {
 dependencyManagement {
 	imports {
 		mavenBom "org.springframework.cloud:spring-cloud-dependencies:Dalston.BUILD-SNAPSHOT"
+	}
+}
+
+publishing {
+	publications {
+		mavenJava(MavenPublication) {
+			groupId "com.maxxton.microservices"
+			artifactId "${application_name}"
+			from components.java
+		}
+	}
+	repositories {
+		maven {
+			credentials {
+				username "microservices"
+				password "M1cr053rv1c35!"
+			}
+			if (project.version.toString().endsWith("-SNAPSHOT")) {
+				url "http://mxt-maven01.newyse.maxxton/repository/snapshots"
+			} else {
+				url "http://mxt-maven01.newyse.maxxton/repository/internal"
+			}
+		}
 	}
 }
