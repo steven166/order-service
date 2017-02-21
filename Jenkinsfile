@@ -1,6 +1,6 @@
 pipeline {
     agent {
-        label: 'maven'
+        label 'maven'
     }
     stages {
         stage('Build and publish') {
